@@ -9,60 +9,47 @@
 
 
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<link rel="stylesheet" href="styles.css">
 
-
-<style>
-.header {
-    width: 100%;
-    height: 15%;
-    background-color: rgb(96, 250, 65);
-}
-#container {
-    margin: 0px auto;
-    width: 400px;
-    height: 300px;
-    border: 10px #333 solid;
-}
-#webCam {
-    width: 100%;
-    height: 70%;
-    padding: 0px 0px 0px 0px;
-    /*background-color: #666;*/
-}
-.footer {
-    width: 100%;
-    height: 15%;
-    background-color: rgb(96, 250, 65);
-}
-body,html {
-    height: 100%;
-}
-
-
-</style>
 </head>
 
 <body>
     <div class="header">
-        <center>
-            <h1>Starhub Chinese New Year 2019</h1>
-        </center>
+        <img id="starhubLogo" src="starhub_logo.png">
+        <span id="eventTitle">
+            <h2>2019 CHINESE NEW YEAR CELEBRATION</h2>
+            <h2>AUTOMATED GUEST REGISTRATION</h2>
+        </span>
     </div>
     <video autoplay="true" id="webCam"></video>
     
-    <div class="footer">
+    <!--<div class="footer">
         <center>
             <h2>Welcome {{Guest Name}}</h2>
         </center>
-    </div>
+    </div>-->
 
+    <canvas id="captureButton" onclick="capturePhoto()"></canvas>
+    <div id="regInstruction">Snap a photo of your face to register</div>
     
 
-    <!--<div id="container">
-        
-    </div>-->
     <script>
         $(document).ready(function() {
+            var canvas = document.getElementById("captureButton");
+
+            var context = canvas.getContext('2d');
+            var centerX = canvas.width / 2;
+            var centerY = canvas.height / 2;
+            var radius = 60;
+
+            context.beginPath();
+            context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+            context.fillStyle = 'white';
+            context.fill();
+            context.lineWidth = 10;
+            context.strokeStyle = "#73c20e";
+            context.stroke();
+
             const video = $('#webCam')[0];
             function onStreaming(stream) {
                 video.srcObject = stream;
@@ -70,6 +57,11 @@ body,html {
 
             navigator.mediaDevices.getUserMedia({ video: true }).then(onStreaming);
         });
+
+        function capturePhoto(){
+            console.log('btn clicked');
+            alert('btn clicked');
+        }
     </script>
 </body>
 </html>
