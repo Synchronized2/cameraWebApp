@@ -35,9 +35,13 @@
 
     <canvas id="captureButton" onclick="capturePhoto()"></canvas>
     <div id="regInstruction">Snap a photo of your face to register</div>
+
+    <canvas id="capturedImg" width="900" height="350"></canvas>
     
 
     <script>
+        var capImgCtx, imgCanvas, video;
+
         $(document).ready(function() {
             var canvas = document.getElementById("captureButton");
 
@@ -54,10 +58,16 @@
             context.strokeStyle = "#73c20e";
             context.stroke();
 
-            const video = $('#webCam')[0];
+            imgCanvas = document.getElementById("capturedImg");
+            capImgCtx = imgCanvas.getContext('2d');
+
+            video = $('#webCam')[0];
+            //const video = $('#webCam')[0];
             function onStreaming(stream) {
                 video.srcObject = stream;
             }
+
+            
 
             navigator.mediaDevices.getUserMedia({ video: true }).then(onStreaming);
         });
@@ -65,6 +75,12 @@
         function capturePhoto(){
             console.log('btn clicked');
             alert('btn clicked');
+            console.log(video);
+            capImgCtx.drawImage(video, 0,0, imgCanvas.width, imgCanvas.height);
+            console.log('imgCanvas');
+            console.log(imgCanvas);
+            console.log('capImgCtx');
+            console.log(capImgCtx);
         }
     </script>
 </body>
