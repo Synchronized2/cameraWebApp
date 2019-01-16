@@ -13,8 +13,16 @@
 <link rel="stylesheet" href="styles.css">
 
 </head>
-
 <body>
+    <div id="overlay">
+        <div id="loader"></div>
+        <p id="regMsg">Registration in progress</p>
+    </div>
+    <div id="regResult">
+        <button onclick="goBack()">back</button>
+        <img id="regResultImg"></img>
+        <p id="regResultMsg"></p>
+    </div>
     <div class="header">
         <img id="sensetimeLogo" src="sensetime_logo.jpg">
         <span id="eventTitle">
@@ -24,7 +32,9 @@
             </center>
         </span>
         <img id="starhubLogo" src="starhub_logo_white_bg.jpg">
+        
     </div>
+    
     <video autoplay="true" id="webCam"></video>
     
     <!--<div class="footer">
@@ -35,12 +45,9 @@
 
     <canvas id="captureButton" onclick="capturePhoto()"></canvas>
     <div id="regInstruction">Snap a photo of your face to register</div>
-
-    <canvas id="capturedImg" width="900" height="350"></canvas>
     
-
     <script>
-        var capImgCtx, imgCanvas, video;
+        var capImgCtx, imgCanvas, video, imageCapture;
 
         $(document).ready(function() {
             var canvas = document.getElementById("captureButton");
@@ -58,29 +65,96 @@
             context.strokeStyle = "#73c20e";
             context.stroke();
 
-            imgCanvas = document.getElementById("capturedImg");
-            capImgCtx = imgCanvas.getContext('2d');
+            //imgCanvas = document.getElementById("capturedImg");
+            //capImgCtx = imgCanvas.getContext('2d');
 
             video = $('#webCam')[0];
             //const video = $('#webCam')[0];
             function onStreaming(stream) {
                 video.srcObject = stream;
+                const mediaStreamTrack = stream.getVideoTracks()[0];
+                imageCapture = new ImageCapture(mediaStreamTrack);
+                console.log(imageCapture);
             }
-
-            
 
             navigator.mediaDevices.getUserMedia({ video: true }).then(onStreaming);
         });
 
+        const overlay = document.getElementById("overlay");
+        const regResult = document.getElementById("regResult");
+        const regMsg = document.getElementById("regMsg");
+        const regResultImg = document.getElementById("regResultImg");
+        const regResultMsg = document.getElementById("regResultMsg");
+        
         function capturePhoto(){
-            console.log('btn clicked');
-            alert('btn clicked');
-            console.log(video);
-            capImgCtx.drawImage(video, 0,0, imgCanvas.width, imgCanvas.height);
-            console.log('imgCanvas');
-            console.log(imgCanvas);
-            console.log('capImgCtx');
-            console.log(capImgCtx);
+            overlay.style.display = "block";
+            imageCapture.takePhoto()
+            .then(blob => {
+                console.log(blob);
+                regResultImg.src = URL.createObjectURL(blob);
+                regResultImg.onload = () => { URL.revokeObjectURL(this.src); }
+                //alert(blob.size);
+
+                var reader = new FileReader();
+                reader.readAsDataURL(blob); 
+                reader.onloadend = function() {
+                    //use split to 'remove data:image/png;base64' header from base64 string
+                    base64data = reader.result.split(',')[1];                
+                    //console.log(base64data);
+
+                    //make post request with base64 image in request body
+                    const postUrl = "http://10.230.6.185:9099/v2/analytics/match";
+                    const data = JSON.stringify({
+                        threshold: 0.9,
+                        image: base64data,
+                        maxRecord: 1,
+                        libraryIds: [
+                            "2a61306c-0f29-11e9-a310-b88584acf3c7",
+                            "2a613122-0f29-11e9-a310-b88584acf3c7",
+                            "2a61313d-0f29-11e9-a310-b88584acf3c7"
+                        ]
+                    })
+                    $.post(postUrl, data, function(data, status){
+                        console.log('made post');
+                        console.log(`${data} and status is ${status}`);
+                        console.log(data);
+                        if (data.status === 1){
+                            //match found
+                            console.log("match found");
+                            var matchID = data.result[0].id;
+                            //make http get with matchID
+                            const getUrl = "http://10.230.6.185:9099/v2/analytics/details/";
+                            $.getJSON(getUrl + matchID, function(result){
+                                console.log('result');
+                                console.log(result);
+                                regResultMsg.innerHTML = "Welcome " + result.result.meta.name;
+                                //show registration results overlay
+                                regResult.style.display = "block";
+                                //hide overlay
+                                overlay.style.display = "none";
+                            });
+                        
+                        } else if (data.status === 0){
+                            //no match
+                            console.log("no match");
+                            regResult.style.display = "block";
+                            regResultMsg.innerHTML = "Sorry we are unable to recognise you, please approach the receptionist to register.";
+                        } else {
+                            console.log("unrecognised status code");
+                            regResult.style.display = "block";
+                            regResultMsg.innerHTML = "Oops, something went wrong. Please try again.";
+                        };
+                        
+                        
+                    })
+                }
+            })
+            .catch(error => console.error('takePhoto() error:', error));
+        }
+
+        function goBack(){
+            overlay.style.display = "none";
+            regResult.style.display = "none";
         }
     </script>
 </body>
